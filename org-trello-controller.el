@@ -344,21 +344,43 @@ Does not preserve position."
 (defun orgtrello-controller--retrieve-archive-cards (data)
   "Retrieve the archive cards from DATA.
 DATA is a list of (board-id &rest buffer-name point-start)."
-  (-> data
-      car
-      orgtrello-api-get-archived-cards
-      (orgtrello-query-http-trello 'sync)
-      (cons data)))
+  (-let* (((board-id) data)
+          (reporter (make-progress-reporter "Fetching archived cards..." 0))
+          (cards
+           (-unfold
+            (lambda (before-id)
+              (-some-> board-id
+                (orgtrello-api-get-archived-cards before-id 300)
+                (orgtrello-query-http-trello 'sync)
+                (-->
+                 (prog1 (cons it (orgtrello-data-entity-id (-last-item it)))
+                   (progress-reporter-update
+                    reporter
+                    (+ (aref (cdr reporter) 6) (length it)))))))
+            nil)))
+    (progress-reporter-done reporter)
+    (cons (apply 'append cards) data)))
 
 (defun orgtrello-controller--retrieve-full-cards (data)
   "Retrieve the full cards from DATA.
 DATA is a list of (archive-cards board-id &rest buffer-name point-start).
 Return the initial list + the full cards."
   (-let* (((_archive-cards board-id) data)
-          (cards (-> board-id
-                     orgtrello-api-get-full-cards
-                     (orgtrello-query-http-trello 'sync))))
-    (cons cards data)))
+          (reporter (make-progress-reporter "Fetching full cards..." 0))
+          (cards
+           (-unfold
+            (lambda (before-id)
+              (-some-> board-id
+                (orgtrello-api-get-full-cards before-id 15)
+                (orgtrello-query-http-trello 'sync)
+                (-->
+                 (prog1 (cons it (orgtrello-data-entity-id (-last-item it)))
+                   (progress-reporter-update
+                    reporter
+                    (+ (aref (cdr reporter) 6) (length it)))))))
+            nil)))
+    (progress-reporter-done reporter)
+    (cons (apply 'append cards) data)))
 
 (defun orgtrello-controller--sync-buffer-with-archived-and-trello-cards (data)
   "Update buffer at point with DATA.

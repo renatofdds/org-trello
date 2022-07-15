@@ -102,26 +102,33 @@ When UNDO-FLAG is set, trigger the undo computation."
      ("fields" .
       "closed,desc,due,idBoard,idChecklists,idList,idMembers,name,pos"))))
 
-(defun orgtrello-api-get-full-cards (board-id)
-  "Create a cards retrieval from the board with BOARD-ID query."
+(defun orgtrello-api-get-full-cards (board-id &optional before-id limit)
+  "Create a query of LIMIT full card info before BEFORE-ID from BOARD-ID."
   (orgtrello-api-make-query
    "GET"
    (format "/boards/%s/cards" board-id)
-   '(("actions" .  "commentCard")
+   `(("actions" .  "commentCard")
      ("checklists" . "all")
-     ;;("checkItemStates" . "true")
      ("filter" . "open")
      ("fields" .
-      "closed,desc,due,idBoard,idList,idMembers,labels,name,pos"))))
+      "closed,desc,due,idBoard,idList,idMembers,labels,name,pos")
+     ("sort" . "-id")
+     ,@(when before-id `(("before" . ,before-id)))
+     ,@(when limit `(("limit" . ,limit)))
+     )))
 
-(defun orgtrello-api-get-archived-cards (board-id)
-  "Create a cards retrieval from the board with BOARD-ID query."
+(defun orgtrello-api-get-archived-cards (board-id &optional before-id limit)
+  "Create a query of LIMIT archived cards before BEFORE-ID from BOARD-ID."
   (orgtrello-api-make-query
    "GET"
    (format "/boards/%s/cards" board-id)
-   '(("filter" . "closed")
+   `(("filter" . "closed")
      ("fields" .
-      "closed,desc,due,idBoard,idList,idMembers,labels,name,pos"))))
+      "closed,desc,due,idBoard,idList,idMembers,labels,name,pos")
+     ("sort" . "-id")
+     ,@(when before-id `(("before" . ,before-id)))
+     ,@(when limit `(("limit" . ,limit)))
+     )))
 
 (defun orgtrello-api-get-card (card-id)
   "Create a get-card with CARD-ID query."

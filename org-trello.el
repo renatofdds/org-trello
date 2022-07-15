@@ -587,7 +587,7 @@ opens new issue in org-trello's github tracker."
 (defcustom org-trello-files nil
   "Org-trello files that needs org-trello activated when opened.
 This does not support regular expression."
-  :type 'list
+  :type '(repeat string)
   :require 'org-trello
   :group 'org-trello)
 
